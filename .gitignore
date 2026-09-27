@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Model binaries — these are large and hosted via GitHub Releases (see §10)
+models/genie_bundle/*.bin
+models/genie_bundle/*.raw
+models/tts/*.onnx
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# PyInstaller
+*.spec.bak
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
