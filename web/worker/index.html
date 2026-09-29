@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Praan Worker</title>
+    <title>सुरक्षा सेवा · Suraksha Seva</title>
     <style>
         * {
             margin: 0;
@@ -13,29 +13,112 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Devanagari', sans-serif;
             background: #F7F4EE;
             color: #1F2933;
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
         /* Join Screen */
         .join-screen {
-            padding: 40px 24px;
+            padding: 24px;
             min-height: 100vh;
+            max-width: 440px;
+            margin: 0 auto;
         }
 
-        .join-title {
-            font-size: 28px;
+        .app-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shield-icon {
+            font-size: 20px;
+        }
+
+        .app-title-text {
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 8px;
             color: #1F2933;
         }
 
-        .join-subtitle {
+        .app-subtitle {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #1F2933;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #1E8E4E;
+            border-radius: 50%;
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #6B7280;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .lang-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+        }
+
+        .lang-btn {
+            flex: 1;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            background: #E6E1D6;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: #1F2933;
+            color: white;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #1F2933;
+            line-height: 1.2;
+        }
+
+        .page-subtitle {
             font-size: 18px;
             color: #6B7280;
             margin-bottom: 32px;
+            font-weight: 400;
         }
 
         .input-group {
@@ -43,66 +126,140 @@
         }
 
         .input-label {
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             color: #1F2933;
             margin-bottom: 8px;
             display: block;
         }
 
+        .input-required {
+            color: #C62828;
+            margin-left: 4px;
+        }
+
+        .text-input-wrapper {
+            position: relative;
+        }
+
         .text-input {
             width: 100%;
-            padding: 16px;
-            font-size: 18px;
-            border: 1px solid #E6E1D6;
-            border-radius: 20px;
+            padding: 16px 16px 16px 48px;
+            font-size: 16px;
+            border: 2px solid #E6E1D6;
+            border-radius: 12px;
             background: white;
+            color: #1F2933;
+            transition: border-color 0.2s;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #1F2933;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: #6B7280;
+        }
+
+        .marshal-card {
+            background: #E8F4FF;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .marshal-icon {
+            font-size: 32px;
+        }
+
+        .marshal-text {
+            flex: 1;
+        }
+
+        .marshal-label {
+            font-size: 12px;
+            color: #2F4B9A;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .marshal-name {
+            font-size: 14px;
+            color: #1F2933;
+            font-weight: 500;
+        }
+
+        .settings-icon {
+            font-size: 20px;
+            color: #6B7280;
+            cursor: pointer;
+        }
+
+        .consent-section {
+            margin-bottom: 32px;
+        }
+
+        .consent-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1F2933;
+            margin-bottom: 16px;
+        }
+
+        .consent-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .consent-list li {
+            padding-left: 24px;
+            margin-bottom: 12px;
+            position: relative;
+            font-size: 14px;
+            line-height: 1.6;
             color: #1F2933;
         }
 
-        .lang-buttons {
+        .consent-list li:before {
+            content: "•";
+            position: absolute;
+            left: 8px;
+            color: #6B7280;
+        }
+
+        .consent-sub {
+            font-size: 13px;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+
+        .privacy-badge {
+            background: #F7F4EE;
+            padding: 12px 16px;
+            border-radius: 8px;
             display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .lang-btn {
-            flex: 1;
-            padding: 16px;
-            font-size: 20px;
-            font-weight: 600;
-            border: 2px solid #E6E1D6;
-            border-radius: 20px;
-            background: white;
-            color: #6B7280;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .lang-btn.active {
-            border-color: #1F2933;
-            background: #1F2933;
-            color: white;
-        }
-
-        .consent-card {
-            background: white;
-            padding: 20px;
-            border-radius: 20px;
-            margin-bottom: 24px;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #1F2933;
             border: 1px solid #E6E1D6;
-        }
-
-        .consent-text {
-            font-size: 16px;
-            line-height: 1.5;
-            color: #6B7280;
         }
 
         .pill-btn {
             width: 100%;
-            padding: 16px;
-            min-height: 56px;
+            padding: 18px;
             font-size: 18px;
             font-weight: 600;
             border: none;
@@ -110,16 +267,28 @@
             background: #1F2933;
             color: white;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .pill-btn:active {
-            opacity: 0.8;
+            transform: scale(0.98);
         }
 
         .pill-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
+        }
+
+        .server-note {
+            text-align: center;
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 16px;
+            line-height: 1.5;
         }
 
         /* State Screen */
@@ -135,11 +304,35 @@
 
         /* State Colors */
         .state-hold { background: #2F4B9A; }
-        .state-stop { background: #C62828; }
+        .state-ready { background: #1E8E4E; }
         .state-go { background: #1E8E4E; }
         .state-warn { background: #D97706; }
         .state-evacuate { background: #C62828; }
-        .state-unknown { background: #475569; }
+        .state-blocked { background: #C62828; }
+
+        .state-header {
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+        }
+
+        .state-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .state-zone {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
 
         .state-content {
             flex: 1;
@@ -147,62 +340,128 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 40px 24px;
+            padding: 48px 32px;
             color: white;
+            text-align: center;
         }
 
-        .state-glyph {
-            font-size: 120px;
-            margin-bottom: 32px;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        .state-icon-circle {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .state-icon-inner {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .state-icon {
+            font-size: 64px;
         }
 
         .state-text-primary {
-            font-size: 24px;
-            font-weight: 600;
-            text-align: center;
-            line-height: 1.4;
+            font-size: 28px;
+            font-weight: 700;
             margin-bottom: 16px;
+            line-height: 1.3;
         }
 
         .state-text-secondary {
-            font-size: 16px;
-            text-align: center;
-            opacity: 0.9;
+            font-size: 18px;
+            opacity: 0.95;
             line-height: 1.5;
+            margin-bottom: 32px;
+            font-weight: 400;
         }
 
-        .state-note {
-            background: white;
-            color: #1F2933;
-            padding: 20px;
-            border-radius: 20px;
-            margin-top: 24px;
-            width: 100%;
-            max-width: 400px;
+        .state-metrics {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 32px;
         }
 
-        .state-note-label {
-            font-size: 12px;
-            font-weight: 600;
+        .state-metric {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-bottom: 4px;
+            font-weight: 500;
             text-transform: uppercase;
-            color: #6B7280;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .state-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 36px;
+            font-weight: 700;
             margin-bottom: 8px;
         }
 
-        .state-note-text {
-            font-size: 16px;
-            line-height: 1.4;
+        .state-timer-label {
+            font-size: 14px;
+            opacity: 0.9;
         }
 
         .state-actions {
             padding: 24px;
-            background: rgba(255, 255, 255, 0.1);
         }
 
-        .state-actions .pill-btn {
+        .action-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 28px;
             background: white;
             color: #1F2933;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .action-btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .state-permit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 12px;
         }
 
         .state-footer {
@@ -210,9 +469,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            font-size: 14px;
+            gap: 12px;
+            font-size: 13px;
+            color: white;
             opacity: 0.9;
+        }
+
+        .footer-separator {
+            opacity: 0.5;
         }
 
         .connection-dot {
@@ -220,36 +484,124 @@
             height: 8px;
             border-radius: 50%;
             background: #1E8E4E;
+            display: inline-block;
         }
 
-        .connection-dot.disconnected {
-            background: #C62828;
+        /* HOLD State Specific */
+        .state-hold .state-icon {
+            color: #2F4B9A;
         }
 
-        /* NO SIGNAL */
-        .no-signal-screen {
-            display: none;
-            min-height: 100vh;
-            background: #475569;
-            color: white;
-            padding: 40px 24px;
+        .field-note-card {
+            background: white;
+            color: #1F2933;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 0 24px 24px 24px;
+            text-align: left;
+        }
+
+        .field-note-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6B7280;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .field-note-body {
+            font-size: 16px;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .field-note-hindi {
+            font-size: 14px;
+            color: #6B7280;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .field-note-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #6B7280;
+        }
+
+        .listening-status {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 16px 24px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 500;
+            display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            gap: 8px;
         }
 
-        .no-signal-screen.active {
+        /* Evacuate State */
+        .state-evacuate .state-icon {
+            color: #C62828;
+        }
+
+        .emergency-badge {
+            background: rgba(255, 255, 255, 0.25);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+        }
+
+        .emergency-warning {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 16px;
+            margin: 0 24px 24px 24px;
             display: flex;
-            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .emergency-warning-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .emergency-warning-text {
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .emergency-warning-hindi {
+            font-size: 14px;
+            margin-top: 8px;
+            opacity: 0.95;
+        }
+
+        /* GO State */
+        .state-go .state-icon,
+        .state-ready .state-icon {
+            color: #1E8E4E;
         }
 
         /* Evacuate Flash */
         @keyframes flash {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+            50% { opacity: 0.85; }
         }
 
-        .state-evacuate .state-content {
+        .state-evacuate {
             animation: flash 1s ease-in-out infinite;
         }
 
@@ -261,71 +613,124 @@
         /* Loading */
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 24px;
             color: #6B7280;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <!-- Join Screen -->
     <div class="join-screen" id="joinScreen">
-        <h1 class="join-title">Join today's job</h1>
-        <p class="join-subtitle">आज के काम में जुड़ें</p>
-
-        <div class="input-group">
-            <label class="input-label">Your name</label>
-            <input type="text" class="text-input" id="workerName" placeholder="Enter your name">
-        </div>
-
-        <div class="input-group">
-            <label class="input-label">Language / भाषा / ਭਾਸ਼ਾ</label>
-            <div class="lang-buttons">
-                <button class="lang-btn" data-lang="pa">ਪੰਜਾਬੀ</button>
-                <button class="lang-btn active" data-lang="hi">हिन्दी</button>
-                <button class="lang-btn" data-lang="en">English</button>
+        <div class="app-header">
+            <div class="app-title">
+                <span class="shield-icon">🛡️</span>
+                <div>
+                    <div class="app-title-text">SURAKSHA SEVA</div>
+                    <div class="app-subtitle">स्वच्छता एवं सुरक्षा प्रबंधन</div>
+                </div>
+            </div>
+            <div class="live-badge">
+                <span class="live-dot"></span>
+                <span>Ward 42 • Live</span>
             </div>
         </div>
 
-        <div class="consent-card">
-            <p class="consent-text">
-                Your phone's location is shared with your supervisor only. Only during this job. 
-                Deleted when the job ends. Not used for attendance or pay.
-            </p>
+        <div class="section-label">भाषा चुनें / SELECT LANGUAGE</div>
+        <div class="lang-buttons">
+            <button class="lang-btn" data-lang="pa">ਪੰਜਾਬੀ</button>
+            <button class="lang-btn active" data-lang="hi">हिन्दी</button>
+            <button class="lang-btn" data-lang="en">English</button>
         </div>
 
-        <button class="pill-btn" id="readyBtn">I'm ready</button>
+        <div class="page-title">आज के काम में जुड़ें</div>
+        <div class="page-subtitle">Join today's job</div>
+
+        <div class="input-group">
+            <label class="input-label">
+                कामगार का नाम / Worker Name
+                <span class="input-required">अनिवार्य / Req.</span>
+            </label>
+            <div class="text-input-wrapper">
+                <span class="input-icon">👤</span>
+                <input type="text" class="text-input" id="workerName" placeholder="अपना नाम दर्ज करें / Enter your name">
+            </div>
+        </div>
+
+        <div class="marshal-card">
+            <span class="marshal-icon">👮</span>
+            <div class="marshal-text">
+                <div class="marshal-label">सुरक्षा मार्शल / Marshal: राजेश कुमार</div>
+                <div class="marshal-name">मैनहोल व सीवर सफ़ाई यूनिट #08</div>
+            </div>
+            <span class="settings-icon">⚙️</span>
+        </div>
+
+        <div class="consent-section">
+            <div class="consent-title">
+                <span>📍</span>
+                स्थान व सुरक्षा सहमति (Location Policy)
+            </div>
+            <ul class="consent-list">
+                <li>
+                    आपका स्थान केवल आपके सुपरवाइजर के साथ साझा किया जाता है।
+                    <div class="consent-sub">Your phone's location is shared with your supervisor only.</div>
+                </li>
+                <li>
+                    केवल इस काम के दौरान सक्रिय रहेगा।
+                    <div class="consent-sub">Only during this job.</div>
+                </li>
+                <li>
+                    काम समाप्त होने पर सारा डेटा स्वतः हटा दिया जाएगा।
+                    <div class="consent-sub">Deleted when the job ends.</div>
+                </li>
+            </ul>
+            <div class="privacy-badge">
+                <span>🔒</span>
+                <span>निजी डेटा पूर्णतः सुरक्षित एवं एन्क्रिप्टेड है</span>
+            </div>
+        </div>
+
+        <button class="pill-btn" id="readyBtn">
+            <span>✓</span>
+            <span>मैं तैयार हूँ / I'm ready</span>
+        </button>
+
+        <div class="server-note">
+            दोनों पर सुरक्षा सेंसर से स्वतः जुड़ान होगा
+        </div>
         
         <div class="loading hidden" id="connecting">
-            Connecting...
+            जुड़ रहे हैं... / Connecting...
         </div>
     </div>
 
     <!-- State Screen -->
     <div class="state-screen" id="stateScreen">
-        <div class="state-content" id="stateContent">
-            <div class="state-glyph" id="stateGlyph">✋</div>
-            <div class="state-text-primary" id="statePrimary">Wait here</div>
-            <div class="state-text-secondary" id="stateSecondary">Do not enter</div>
-            <div class="state-note hidden" id="stateNote">
-                <div class="state-note-label">Note from supervisor</div>
-                <div class="state-note-text" id="stateNoteText"></div>
+        <div class="state-header">
+            <div class="state-status">
+                <span class="live-dot"></span>
+                <span id="stateStatusText">LIVE SIGNAL • सीधा संकेत</span>
+            </div>
+            <div class="state-zone">
+                <span>📡</span>
+                <span id="stateZoneText">ZONE-4B</span>
             </div>
         </div>
-        <div class="state-actions" id="stateActions">
-            <!-- Action button appears here -->
+
+        <div class="state-content" id="stateContent">
+            <!-- Content populated by JS -->
         </div>
+
+        <div id="stateNoteContainer"></div>
+        <div id="stateListening"></div>
+        <div class="state-actions" id="stateActions"></div>
+        
         <div class="state-footer">
             <span class="connection-dot" id="connectionDot"></span>
-            <span id="footerText">Connected</span>
-        </div>
-    </div>
-
-    <!-- No Signal Screen -->
-    <div class="no-signal-screen" id="noSignalScreen">
-        <div class="state-glyph">📵</div>
-        <div class="state-text-primary">No signal</div>
-        <div class="state-text-secondary">
-            Do not enter. If you are inside, leave now.
+            <span id="footerText">Connected / कनेक्टेड</span>
+            <span class="footer-separator">•</span>
+            <span>Live Telemetry</span>
         </div>
     </div>
 
