@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Praan Worker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #F7F4EE;
+            color: #1F2933;
+            overflow-x: hidden;
+        }
+
+        /* Join Screen */
+        .join-screen {
+            padding: 40px 24px;
+            min-height: 100vh;
+        }
+
+        .join-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1F2933;
+        }
+
+        .join-subtitle {
+            font-size: 18px;
+            color: #6B7280;
+            margin-bottom: 32px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .input-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1F2933;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            border: 1px solid #E6E1D6;
+            border-radius: 20px;
+            background: white;
+            color: #1F2933;
+        }
+
+        .lang-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .lang-btn {
+            flex: 1;
+            padding: 16px;
+            font-size: 20px;
+            font-weight: 600;
+            border: 2px solid #E6E1D6;
+            border-radius: 20px;
+            background: white;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            border-color: #1F2933;
+            background: #1F2933;
+            color: white;
+        }
+
+        .consent-card {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            border: 1px solid #E6E1D6;
+        }
+
+        .consent-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #6B7280;
+        }
+
+        .pill-btn {
+            width: 100%;
+            padding: 16px;
+            min-height: 56px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 28px;
+            background: #1F2933;
+            color: white;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .pill-btn:active {
+            opacity: 0.8;
+        }
+
+        .pill-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* State Screen */
+        .state-screen {
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        .state-screen.active {
+            display: flex;
+        }
+
+        /* State Colors */
+        .state-hold { background: #2F4B9A; }
+        .state-stop { background: #C62828; }
+        .state-go { background: #1E8E4E; }
+        .state-warn { background: #D97706; }
+        .state-evacuate { background: #C62828; }
+        .state-unknown { background: #475569; }
+
+        .state-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+            color: white;
+        }
+
+        .state-glyph {
+            font-size: 120px;
+            margin-bottom: 32px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+        }
+
+        .state-text-primary {
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+
+        .state-text-secondary {
+            font-size: 16px;
+            text-align: center;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .state-note {
+            background: white;
+            color: #1F2933;
+            padding: 20px;
+            border-radius: 20px;
+            margin-top: 24px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .state-note-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6B7280;
+            margin-bottom: 8px;
+        }
+
+        .state-note-text {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .state-actions {
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .state-actions .pill-btn {
+            background: white;
+            color: #1F2933;
+        }
+
+        .state-footer {
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #1E8E4E;
+        }
+
+        .connection-dot.disconnected {
+            background: #C62828;
+        }
+
+        /* NO SIGNAL */
+        .no-signal-screen {
+            display: none;
+            min-height: 100vh;
+            background: #475569;
+            color: white;
+            padding: 40px 24px;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .no-signal-screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Evacuate Flash */
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .state-evacuate .state-content {
+            animation: flash 1s ease-in-out infinite;
+        }
+
+        /* Hide elements */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6B7280;
+        }
+    </style>
+</head>
+<body>
+    <!-- Join Screen -->
+    <div class="join-screen" id="joinScreen">
+        <h1 class="join-title">Join today's job</h1>
+        <p class="join-subtitle">आज के काम में जुड़ें</p>
+
+        <div class="input-group">
+            <label class="input-label">Your name</label>
+            <input type="text" class="text-input" id="workerName" placeholder="Enter your name">
+        </div>
+
+        <div class="input-group">
+            <label class="input-label">Language / भाषा / ਭਾਸ਼ਾ</label>
+            <div class="lang-buttons">
+                <button class="lang-btn" data-lang="pa">ਪੰਜਾਬੀ</button>
+                <button class="lang-btn active" data-lang="hi">हिन्दी</button>
+                <button class="lang-btn" data-lang="en">English</button>
+            </div>
+        </div>
+
+        <div class="consent-card">
+            <p class="consent-text">
+                Your phone's location is shared with your supervisor only. Only during this job. 
+                Deleted when the job ends. Not used for attendance or pay.
+            </p>
+        </div>
+
+        <button class="pill-btn" id="readyBtn">I'm ready</button>
+        
+        <div class="loading hidden" id="connecting">
+            Connecting...
+        </div>
+    </div>
+
+    <!-- State Screen -->
+    <div class="state-screen" id="stateScreen">
+        <div class="state-content" id="stateContent">
+            <div class="state-glyph" id="stateGlyph">✋</div>
+            <div class="state-text-primary" id="statePrimary">Wait here</div>
+            <div class="state-text-secondary" id="stateSecondary">Do not enter</div>
+            <div class="state-note hidden" id="stateNote">
+                <div class="state-note-label">Note from supervisor</div>
+                <div class="state-note-text" id="stateNoteText"></div>
+            </div>
+        </div>
+        <div class="state-actions" id="stateActions">
+            <!-- Action button appears here -->
+        </div>
+        <div class="state-footer">
+            <span class="connection-dot" id="connectionDot"></span>
+            <span id="footerText">Connected</span>
+        </div>
+    </div>
+
+    <!-- No Signal Screen -->
+    <div class="no-signal-screen" id="noSignalScreen">
+        <div class="state-glyph">📵</div>
+        <div class="state-text-primary">No signal</div>
+        <div class="state-text-secondary">
+            Do not enter. If you are inside, leave now.
+        </div>
+    </div>
+
+    <script src="worker.js"></script>
+</body>
+</html>

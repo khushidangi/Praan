@@ -24,6 +24,9 @@ from safety.engine_v2 import RuleEngine
 from safety.config import get_config
 from pipeline.guidance import GuidanceGenerator
 from pipeline.voice import VoiceGenerator
+from session.manager import SessionManager
+from session.auth import init_auth, get_auth
+from backend.ws_worker import WorkerConnection
 
 
 app = FastAPI(title="Praan Safety System")
@@ -43,9 +46,16 @@ guidance_gen = GuidanceGenerator(use_genie=False)
 voice_gen = VoiceGenerator(language="hi")
 safety_config = get_config()
 rule_engine = RuleEngine(safety_config)
+session_manager = SessionManager()
+
+# Initialize auth
+init_auth()
 
 # Simulated probe (will be replaced by real USB-serial connection)
 simulated_probe = SimulatedProbe(scenario="safe")
+
+# Active worker connections
+worker_connections: Dict[str, List[WorkerConnection]] = {}
 
 # WebSocket connection manager
 class ConnectionManager:
@@ -87,10 +97,23 @@ async def probe_broadcast_loop():
             decision_obj = rule_engine.evaluate(frame)
             decision = decision_obj.to_dict()
 
+            # Process decision through active sessions
+            for session_id, session in list(session_manager.sessions.items()):
+                if session.state.value not in ["CLOSED"]:
+                    session_manager.process_decision(session_id, decision)
+                    
+                    # Broadcast state updates to workers
+                    if session_id in worker_connections:
+                        for conn in worker_connections[session_id]:
+                            try:
+                                await conn.send_state({})
+                            except:
+                                pass
+
             # Generate guidance
             guidance = guidance_gen.generate(decision, language="hi")
 
-            # Broadcast to all connected clients
+            # Broadcast to telemetry clients (legacy dashboard)
             await manager.broadcast({
                 "type": "update",
                 "frame": frame,
@@ -178,6 +201,41 @@ async def telemetry_stream(websocket: WebSocket):
         print(f"WebSocket error: {e}")
 
 
+@app.websocket("/ws/worker")
+async def worker_socket(websocket: WebSocket, session: str, token: str):
+    """Worker WebSocket endpoint (7.3 spec)."""
+    # Verify token
+    auth = get_auth()
+    payload = auth.verify_token(token)
+    
+    if not payload or payload.get("role") != "worker":
+        await websocket.close(code=1008, reason="Invalid token")
+        return
+    
+    session_id = payload.get("session_id")
+    if session_id != session:
+        await websocket.close(code=1008, reason="Token session mismatch")
+        return
+    
+    # Generate worker ID
+    worker_id = f"worker_{int(time.time())}"
+    
+    # Create connection
+    conn = WorkerConnection(websocket, session_id, worker_id, session_manager)
+    
+    # Track connection
+    if session_id not in worker_connections:
+        worker_connections[session_id] = []
+    worker_connections[session_id].append(conn)
+    
+    try:
+        await conn.handle()
+    finally:
+        # Clean up
+        if session_id in worker_connections:
+            worker_connections[session_id].remove(conn)
+
+
 # ──────────────────────────────────────────────────────────────────────
 # REST API: Inspection Records
 # ──────────────────────────────────────────────────────────────────────
@@ -223,6 +281,118 @@ async def site_history(site_id: str, limit: int = 20):
 
 class ScenarioRequest(BaseModel):
     scenario: str
+
+
+class SessionCreateRequest(BaseModel):
+    site_id: str
+    site_name: str
+    supervisor: str
+
+
+class HoldRequest(BaseModel):
+    note: Optional[str] = None
+
+
+@app.post("/api/sessions")
+async def create_session(req: SessionCreateRequest):
+    """Create a new session."""
+    session = session_manager.create_session(
+        site_id=req.site_id,
+        site_name=req.site_name,
+        supervisor=req.supervisor,
+        simulated=True
+    )
+    
+    # Generate worker join token
+    auth = get_auth()
+    worker_token = auth.generate_token(session.session_id, "worker", exp_hours=24)
+    
+    # Generate join URL
+    join_url = f"/w?session={session.session_id}&token={worker_token}"
+    
+    return {
+        "success": True,
+        "session_id": session.session_id,
+        "worker_join_url": join_url,
+        "worker_token": worker_token
+    }
+
+
+@app.post("/api/sessions/{session_id}/deploy_probe")
+async def deploy_probe_endpoint(session_id: str):
+    """Deploy probe to start sampling."""
+    success = session_manager.deploy_probe(session_id, "supervisor")
+    return {"success": success}
+
+
+@app.post("/api/sessions/{session_id}/hold")
+async def set_hold_endpoint(session_id: str, req: HoldRequest):
+    """Set supervisor hold."""
+    success = session_manager.set_hold(session_id, req.note, "supervisor")
+    return {"success": success}
+
+
+@app.post("/api/sessions/{session_id}/release_hold")
+async def release_hold_endpoint(session_id: str):
+    """Release supervisor hold."""
+    success = session_manager.release_hold(session_id, "supervisor")
+    return {"success": success}
+
+
+@app.post("/api/sessions/{session_id}/authorize")
+async def authorize_entry_endpoint(session_id: str):
+    """Authorize entry."""
+    success = session_manager.authorize_entry(session_id, "supervisor")
+    return {"success": success}
+
+
+@app.post("/api/sessions/{session_id}/evacuate")
+async def evacuate_endpoint(session_id: str):
+    """Trigger evacuation."""
+    success = session_manager.evacuate(session_id, "supervisor")
+    return {"success": success}
+
+
+@app.post("/api/sessions/{session_id}/all_clear")
+async def all_clear_endpoint(session_id: str):
+    """Clear evacuation."""
+    success = session_manager.all_clear(session_id, "supervisor")
+    return {"success": success}
+
+
+@app.post("/api/sessions/{session_id}/close")
+async def close_session_endpoint(session_id: str):
+    """Close session."""
+    success = session_manager.close_session(session_id, "supervisor")
+    return {"success": success}
+
+
+@app.get("/api/sessions/{session_id}")
+async def get_session_endpoint(session_id: str):
+    """Get session details."""
+    session = session_manager.get_session(session_id)
+    if not session:
+        raise HTTPException(404, "Session not found")
+    
+    return {
+        "session_id": session.session_id,
+        "site_id": session.site_id,
+        "site_name": session.site_name,
+        "state": session.state.value,
+        "workers": [
+            {
+                "worker_id": w.worker_id,
+                "name": w.name,
+                "lang": w.lang,
+                "presence": w.presence,
+                "in_entry": w.in_entry
+            }
+            for w in session.workers.values()
+        ],
+        "hold_flag": session.hold_flag,
+        "hold_note": session.hold_note,
+        "simulated": session.simulated
+    }
 
 
 @app.post("/api/simulate/scenario")
@@ -425,27 +595,29 @@ async def root():
                 max-width: 800px;
                 margin: 40px auto;
                 padding: 20px;
-                background: #f5f5f5;
+                background: #F7F4EE;
             }
             h1 { color: #333; }
             .status { 
                 padding: 20px; 
                 background: white; 
-                border-radius: 8px; 
+                border-radius: 20px; 
                 margin: 20px 0;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                border: 1px solid #E6E1D6;
             }
             .links { margin-top: 30px; }
             .links a { 
                 display: inline-block;
-                padding: 10px 20px;
-                background: #0066cc;
+                padding: 12px 24px;
+                background: #1F2933;
                 color: white;
                 text-decoration: none;
-                border-radius: 4px;
+                border-radius: 24px;
                 margin-right: 10px;
+                margin-bottom: 10px;
+                font-weight: 600;
             }
-            .links a:hover { background: #0052a3; }
+            .links a:hover { opacity: 0.9; }
         </style>
     </head>
     <body>
@@ -453,12 +625,14 @@ async def root():
         <div class="status">
             <h2>System Status</h2>
             <p>✅ Backend running</p>
+            <p>✅ Session manager active</p>
             <p>⚙️ Mode: Simulated probe</p>
-            <p>🔗 WebSocket endpoint: <code>/ws/telemetry</code></p>
+            <p>🔗 WebSocket endpoints: <code>/ws/worker</code>, <code>/ws/telemetry</code></p>
         </div>
         <div class="links">
-            <a href="/dashboard">Field Unit Dashboard</a>
-            <a href="/city">City Layer Dashboard</a>
+            <a href="/s">Supervisor Interface</a>
+            <a href="/dashboard">Legacy Dashboard</a>
+            <a href="/city">City Layer</a>
             <a href="/docs">API Documentation</a>
         </div>
     </body>
@@ -476,6 +650,27 @@ def resource_path(relative_path: str) -> Path:
         base_path = Path(__file__).parent.parent
     
     return base_path / relative_path
+
+
+@app.get("/w")
+async def worker_app():
+    """Serve worker app."""
+    worker_path = resource_path("web/worker/index.html")
+    return FileResponse(worker_path)
+
+
+@app.get("/s")
+async def supervisor_app():
+    """Serve supervisor app."""
+    supervisor_path = resource_path("web/supervisor/index.html")
+    return FileResponse(supervisor_path)
+
+
+@app.get("/web/worker/worker.js")
+async def worker_js():
+    """Serve worker JS."""
+    js_path = resource_path("web/worker/worker.js")
+    return FileResponse(js_path, media_type="application/javascript")
 
 
 @app.get("/dashboard")

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Praan Supervisor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #F7F4EE;
+            color: #1F2933;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #6B7280;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #E6E1D6;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 1px solid #E6E1D6;
+            border-radius: 12px;
+            background: white;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            min-height: 48px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 24px;
+            background: #1F2933;
+            color: white;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1F2933;
+            border: 1px solid #E6E1D6;
+        }
+
+        .qr-section {
+            text-align: center;
+            padding: 24px;
+            background: #F7F4EE;
+            border-radius: 12px;
+            margin-top: 16px;
+        }
+
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 16px;
+            background: white;
+            border: 2px dashed #E6E1D6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #6B7280;
+        }
+
+        .join-url {
+            font-family: monospace;
+            font-size: 12px;
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            word-break: break-all;
+            margin-top: 12px;
+        }
+
+        .state-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .state-PREP { background: #E6E1D6; color: #1F2933; }
+        .state-SAMPLING { background: #FEF3C7; color: #92400E; }
+        .state-BLOCKED { background: #FEE2E2; color: #991B1B; }
+        .state-READY { background: #D1FAE5; color: #065F46; }
+        .state-AUTHORIZED { background: #D1FAE5; color: #065F46; }
+        .state-IN_ENTRY { background: #DBEAFE; color: #1E40AF; }
+        .state-EVACUATE { background: #FEE2E2; color: #991B1B; }
+
+        .workers-list {
+            margin-top: 16px;
+        }
+
+        .worker-chip {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #F7F4EE;
+            border-radius: 16px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .success {
+            color: #1E8E4E;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .error {
+            color: #C62828;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Praan Supervisor</h1>
+        <p class="subtitle">Session control interface</p>
+
+        <!-- Create Session -->
+        <div class="card" id="createCard">
+            <div class="card-title">Start New Job</div>
+            <div class="input-group">
+                <label class="label">Site Name</label>
+                <input type="text" class="input" id="siteName" value="Manhole 47-B" placeholder="Enter site name">
+            </div>
+            <div class="input-group">
+                <label class="label">Supervisor Name</label>
+                <input type="text" class="input" id="supervisorName" value="Demo Supervisor" placeholder="Your name">
+            </div>
+            <button class="btn" onclick="createSession()">Start Job</button>
+        </div>
+
+        <!-- Session Control -->
+        <div class="card hidden" id="sessionCard">
+            <div class="card-title">Active Session</div>
+            
+            <div class="state-badge" id="sessionState">PREP</div>
+            
+            <div><strong>Session ID:</strong> <span id="sessionId"></span></div>
+            <div><strong>Site:</strong> <span id="sessionSite"></span></div>
+            
+            <div class="qr-section hidden" id="qrSection">
+                <div class="qr-placeholder">QR Code Here</div>
+                <div><strong>Worker Join URL:</strong></div>
+                <div class="join-url" id="joinUrl"></div>
+                <button class="btn btn-secondary" onclick="copyJoinUrl()">Copy URL</button>
+            </div>
+
+            <div class="workers-list">
+                <div class="label">Workers</div>
+                <div id="workersList">No workers yet</div>
+            </div>
+
+            <div class="actions">
+                <button class="btn" id="deployBtn" onclick="deployProbe()">Deploy Probe</button>
+                <button class="btn" id="holdBtn" onclick="setHold()">Set Hold</button>
+                <button class="btn" id="releaseBtn" onclick="releaseHold()" disabled>Release Hold</button>
+                <button class="btn" id="authorizeBtn" onclick="authorize()" disabled>Authorize Entry</button>
+                <button class="btn" id="evacuateBtn" onclick="evacuate()">Evacuate</button>
+                <button class="btn" id="allClearBtn" onclick="allClear()" disabled>All Clear</button>
+                <button class="btn" id="closeBtn" onclick="closeSession()">Close Session</button>
+            </div>
+
+            <div id="statusMsg"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let currentJoinUrl = null;
+        let pollInterval = null;
+
+        async function createSession() {
+            const siteName = document.getElementById('siteName').value.trim();
+            const supervisor = document.getElementById('supervisorName').value.trim();
+            
+            if (!siteName || !supervisor) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        site_id: `site_${Date.now()}`,
+                        site_name: siteName,
+                        supervisor: supervisor
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    currentJoinUrl = `${window.location.origin}${data.worker_join_url}`;
+                    
+                    document.getElementById('createCard').classList.add('hidden');
+                    document.getElementById('sessionCard').classList.remove('hidden');
+                    document.getElementById('sessionId').textContent = data.session_id;
+                    document.getElementById('sessionSite').textContent = siteName;
+                    document.getElementById('joinUrl').textContent = currentJoinUrl;
+                    document.getElementById('qrSection').classList.remove('hidden');
+                    
+                    // Start polling session state
+                    startPolling();
+                }
+            } catch (error) {
+                showError('Failed to create session: ' + error.message);
+            }
+        }
+
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            
+            pollInterval = setInterval(async () => {
+                if (!currentSessionId) return;
+                
+                try {
+                    const response = await fetch(`/api/sessions/${currentSessionId}`);
+                    const session = await response.json();
+                    
+                    updateSessionUI(session);
+                } catch (error) {
+                    console.error('Poll error:', error);
+                }
+            }, 2000);
+        }
+
+        function updateSessionUI(session) {
+            // Update state badge
+            const stateBadge = document.getElementById('sessionState');
+            stateBadge.textContent = session.state;
+            stateBadge.className = `state-badge state-${session.state}`;
+            
+            // Update workers list
+            const workersList = document.getElementById('workersList');
+            if (session.workers && session.workers.length > 0) {
+                workersList.innerHTML = session.workers.map(w => 
+                    `<span class="worker-chip">${w.name} (${w.lang}) - ${w.presence}${w.in_entry ? ' [INSIDE]' : ''}</span>`
+                ).join('');
+            } else {
+                workersList.textContent = 'No workers yet';
+            }
+            
+            // Update button states
+            const state = session.state;
+            document.getElementById('deployBtn').disabled = state !== 'PREP';
+            document.getElementById('authorizeBtn').disabled = state !== 'READY';
+            document.getElementById('releaseBtn').disabled = !session.hold_flag;
+            document.getElementById('allClearBtn').disabled = state !== 'EVACUATE';
+        }
+
+        async function deployProbe() {
+            await callAPI(`/api/sessions/${currentSessionId}/deploy_probe`, 'Probe deployed');
+        }
+
+        async function setHold() {
+            const note = prompt('Hold note (optional):');
+            await callAPI(`/api/sessions/${currentSessionId}/hold`, 'Hold set', {
+                note: note || null
+            });
+        }
+
+        async function releaseHold() {
+            await callAPI(`/api/sessions/${currentSessionId}/release_hold`, 'Hold released');
+        }
+
+        async function authorize() {
+            await callAPI(`/api/sessions/${currentSessionId}/authorize`, 'Entry authorized');
+        }
+
+        async function evacuate() {
+            if (!confirm('Trigger evacuation?')) return;
+            await callAPI(`/api/sessions/${currentSessionId}/evacuate`, 'Evacuation triggered');
+        }
+
+        async function allClear() {
+            await callAPI(`/api/sessions/${currentSessionId}/all_clear`, 'All clear');
+        }
+
+        async function closeSession() {
+            if (!confirm('Close this session?')) return;
+            await callAPI(`/api/sessions/${currentSessionId}/close`, 'Session closed');
+            
+            if (pollInterval) clearInterval(pollInterval);
+            location.reload();
+        }
+
+        async function callAPI(endpoint, successMsg, body = null) {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: body ? { 'Content-Type': 'application/json' } : {},
+                    body: body ? JSON.stringify(body) : null
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess(successMsg);
+                } else {
+                    showError('Action failed');
+                }
+            } catch (error) {
+                showError('Error: ' + error.message);
+            }
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('statusMsg');
+            el.className = 'success';
+            el.textContent = '✓ ' + msg;
+            setTimeout(() => el.textContent = '', 3000);
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('statusMsg');
+            el.className = 'error';
+            el.textContent = '✗ ' + msg;
+            setTimeout(() => el.textContent = '', 3000);
+        }
+
+        function copyJoinUrl() {
+            navigator.clipboard.writeText(currentJoinUrl);
+            showSuccess('URL copied!');
+        }
+
+        // Helper for hidden class
+        document.addEventListener('DOMContentLoaded', () => {
+            const style = document.createElement('style');
+            style.textContent = '.hidden { display: none !important; }';
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>
