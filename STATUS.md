@@ -98,26 +98,29 @@
 - ⏳ Rim mode (?mode=rim for spare display)
 - ⏳ Recorded audio clips (currently using Web Audio siren)
 
-## Phase 4: Supervisor and Ward UI - PARTIAL
+## Phase 4: Supervisor and Ward UI - SUPERVISOR LIVE FLOW IMPLEMENTED
 
 ### Implemented
-- ✅ web/supervisor/index.html - Basic supervisor interface:
-  - Session creation
-  - QR code display (placeholder)
-  - State monitoring
-  - Worker list
-  - Control buttons (deploy, hold, authorize, evacuate, etc.)
-  - Real-time session polling
+- ✅ web/supervisor/index.html - Connected supervisor flow:
+  - Today site list and session creation
+  - Worker join link with relative URL
+  - Authenticated supervisor WebSocket with REST fallback
+  - Live session state, simulated probe label, crew presence and entry status
+  - Gas readings, limits, trends and reading age
+  - Safety action plan and briefing checklist gate before authorization
+  - Hold, release, deploy, authorize, evacuate, all-clear and sign-off controls
+  - Append-only session timeline and provenance footer
+- ✅ backend/app.py - Supervisor integration:
+  - Supervisor token returned at session creation
+  - `/ws/supervisor` streams authoritative session snapshots
+  - `/api/sessions/{id}/snapshot` and `/timeline` REST fallbacks
+- ✅ session/manager.py - Snapshot contract includes latest reading, decision, crew and timeline
 
 ### Not Yet Implemented
-- ⏳ R-U1: Today screen with site history scores
-- ⏳ R-U2: Full Live Site screen per spec
-- ⏳ R-U3: Action plan from playbook
-- ⏳ R-U4: Briefing checklist
-- ⏳ R-U5: Gas display with limits, trends, sparklines
-- ⏳ R-U6: Live event timeline
-- ⏳ R-U7: Wrap-up screen
-- ⏳ R-U8: Full provenance display
+- ⏳ R-U1: Computed history scores and one-tap QR rendering
+- ⏳ R-U3: Playbook-backed action assignment and completion effects
+- ⏳ R-U7: Persisting a full session inspection record at wrap-up
+- ⏳ Sparkline rendering and richer measured-effect telemetry
 - ⏳ R-D1: Ward view per 7.10
 
 ## Phase 5: Playbook and Guidance - NOT STARTED

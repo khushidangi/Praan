@@ -69,6 +69,8 @@ class Session:
     # Latest engine decision
     latest_decision: Optional[Dict] = None
     latest_decision_id: Optional[str] = None
+    latest_frame: Optional[Dict] = None
+    last_reading_at: Optional[float] = None
     
     # Sequence counter for messages
     seq: int = 0
@@ -231,6 +233,8 @@ class SessionManager:
         
         session.latest_decision = decision
         session.latest_decision_id = decision.get("decision_id")
+        session.latest_frame = decision.get("readings")
+        session.last_reading_at = decision.get("ts", time.time())
         
         engine_decision = decision.get("decision")
         current_state = session.state
@@ -297,6 +301,41 @@ class SessionManager:
                 return True
         
         return False
+
+    def get_supervisor_snapshot(self, session_id: str) -> Optional[Dict]:
+        """Return the complete live contract consumed by the supervisor UI."""
+        session = self.get_session(session_id)
+        if not session:
+            return None
+
+        return {
+            "type": "snapshot",
+            "seq": session.seq,
+            "session_id": session.session_id,
+            "site_id": session.site_id,
+            "site_name": session.site_name,
+            "supervisor": session.supervisor,
+            "state": session.state.value,
+            "hold_flag": session.hold_flag,
+            "hold_note": session.hold_note,
+            "simulated": session.simulated,
+            "started_at": session.started_at,
+            "go_expires_at": session.go_expires_at,
+            "reading": session.latest_frame,
+            "decision": session.latest_decision,
+            "workers": [
+                {
+                    "worker_id": worker.worker_id,
+                    "name": worker.name,
+                    "lang": worker.lang,
+                    "presence": worker.presence,
+                    "in_entry": worker.in_entry,
+                    "last_hb": worker.last_hb,
+                }
+                for worker in session.workers.values()
+            ],
+            "timeline": self.event_log.get_timeline(session_id),
+        }
     
     def deploy_probe(self, session_id: str, actor: str) -> bool:
         """Transition to SAMPLING state."""

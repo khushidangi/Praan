@@ -56,6 +56,7 @@ simulated_probe = SimulatedProbe(scenario="safe")
 
 # Active worker connections
 worker_connections: Dict[str, List[WorkerConnection]] = {}
+supervisor_connections: Dict[str, List[WebSocket]] = {}
 
 # WebSocket connection manager
 class ConnectionManager:
@@ -83,6 +84,23 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+
+async def broadcast_supervisor_snapshot(session_id: str):
+    """Broadcast one authoritative snapshot to every supervisor viewing a session."""
+    connections = supervisor_connections.get(session_id, [])
+    snapshot = session_manager.get_supervisor_snapshot(session_id)
+    if not snapshot:
+        return
+
+    dead = []
+    for connection in connections:
+        try:
+            await connection.send_json(snapshot)
+        except Exception:
+            dead.append(connection)
+    for connection in dead:
+        connections.remove(connection)
+
 # Background task for probe reading
 probe_task_running = False
 
@@ -109,6 +127,7 @@ async def probe_broadcast_loop():
                                 await conn.send_state({})
                             except:
                                 pass
+                    await broadcast_supervisor_snapshot(session_id)
 
             # Generate guidance
             guidance = guidance_gen.generate(decision, language="hi")
@@ -236,6 +255,36 @@ async def worker_socket(websocket: WebSocket, session: str, token: str):
             worker_connections[session_id].remove(conn)
 
 
+@app.websocket("/ws/supervisor")
+async def supervisor_socket(websocket: WebSocket, session: str, token: str):
+    """Stream session snapshots to an authenticated supervisor client."""
+    payload = get_auth().verify_token(token)
+    if not payload or payload.get("role") != "supervisor":
+        await websocket.close(code=1008, reason="Invalid supervisor token")
+        return
+    if payload.get("session_id") not in ("supervisor_global", session):
+        await websocket.close(code=1008, reason="Token session mismatch")
+        return
+    if not session_manager.get_session(session):
+        await websocket.close(code=1008, reason="Session not found")
+        return
+
+    await websocket.accept()
+    supervisor_connections.setdefault(session, []).append(websocket)
+    try:
+        initial = session_manager.get_supervisor_snapshot(session)
+        if initial:
+            await websocket.send_json(initial)
+        while True:
+            # The socket is server-push for state, but receiving keeps disconnects observable.
+            await websocket.receive_text()
+    except (WebSocketDisconnect, Exception):
+        pass
+    finally:
+        if websocket in supervisor_connections.get(session, []):
+            supervisor_connections[session].remove(websocket)
+
+
 # ──────────────────────────────────────────────────────────────────────
 # REST API: Inspection Records
 # ──────────────────────────────────────────────────────────────────────
@@ -306,6 +355,7 @@ async def create_session(req: SessionCreateRequest):
     # Generate worker join token
     auth = get_auth()
     worker_token = auth.generate_token(session.session_id, "worker", exp_hours=24)
+    supervisor_token = auth.generate_token(session.session_id, "supervisor", exp_hours=24)
     
     # Generate join URL
     join_url = f"/w?session={session.session_id}&token={worker_token}"
@@ -314,7 +364,9 @@ async def create_session(req: SessionCreateRequest):
         "success": True,
         "session_id": session.session_id,
         "worker_join_url": join_url,
-        "worker_token": worker_token
+        "worker_token": worker_token,
+        "supervisor_token": supervisor_token,
+        "simulated": session.simulated,
     }
 
 
@@ -393,6 +445,23 @@ async def get_session_endpoint(session_id: str):
         "hold_note": session.hold_note,
         "simulated": session.simulated
     }
+
+
+@app.get("/api/sessions/{session_id}/snapshot")
+async def session_snapshot_endpoint(session_id: str):
+    """Return the same snapshot sent over the supervisor WebSocket."""
+    snapshot = session_manager.get_supervisor_snapshot(session_id)
+    if not snapshot:
+        raise HTTPException(404, "Session not found")
+    return snapshot
+
+
+@app.get("/api/sessions/{session_id}/timeline")
+async def session_timeline_endpoint(session_id: str):
+    """Return the append-only session event timeline."""
+    if not session_manager.get_session(session_id):
+        raise HTTPException(404, "Session not found")
+    return {"session_id": session_id, "timeline": session_manager.event_log.get_timeline(session_id)}
 
 
 @app.post("/api/simulate/scenario")
