@@ -20,7 +20,8 @@ import asyncio
 
 from backend.state_store import StateStore
 from backend.simulated_probe import SimulatedProbe
-from safety.rule_engine import evaluate
+from safety.engine_v2 import RuleEngine
+from safety.config import get_config
 from pipeline.guidance import GuidanceGenerator
 from pipeline.voice import VoiceGenerator
 
@@ -40,6 +41,8 @@ app.add_middleware(
 state = StateStore()
 guidance_gen = GuidanceGenerator(use_genie=False)
 voice_gen = VoiceGenerator(language="hi")
+safety_config = get_config()
+rule_engine = RuleEngine(safety_config)
 
 # Simulated probe (will be replaced by real USB-serial connection)
 simulated_probe = SimulatedProbe(scenario="safe")
@@ -81,7 +84,8 @@ async def probe_broadcast_loop():
             frame = simulated_probe.read_frame()
 
             # Evaluate safety decision
-            decision = evaluate(frame)
+            decision_obj = rule_engine.evaluate(frame)
+            decision = decision_obj.to_dict()
 
             # Generate guidance
             guidance = guidance_gen.generate(decision, language="hi")
@@ -479,6 +483,31 @@ async def dashboard():
     """Serve field unit dashboard."""
     dashboard_path = resource_path("dashboard/field_unit.html")
     return FileResponse(dashboard_path)
+
+
+@app.get("/api/ai/status")
+async def ai_status():
+    """AI status endpoint - shows real engine/provider status."""
+    # Check if Genie is actually wired up
+    engine = "template"  # Will be "genie" when NPU integrated
+    provider = "none"    # Will be "NPU" or "CPU" when Genie is wired
+    model = None
+    latency_ms = None
+    
+    # Check citations
+    citations_valid = safety_config.all_citations_valid
+    missing_citations = safety_config.missing_citations if not citations_valid else []
+    
+    return {
+        "engine": engine,
+        "provider": provider,
+        "model": model,
+        "latency_ms": latency_ms,
+        "citations_valid": citations_valid,
+        "missing_citations": missing_citations,
+        "offline": True,
+        "cloud_requests": 0
+    }
 
 
 @app.get("/health")
