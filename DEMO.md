@@ -33,7 +33,7 @@ Open browser to `http://localhost:8000/dashboard`
 - Guidance: "वायु सुरक्षित है। प्रवेश की अनुमति है।"
 - Provenance panel showing "deterministic_rule_engine" decided
 
-**Say**: "All readings are safe. The rule engine - not AI - makes this decision. The AI only translates it to Hindi."
+**Say**: "The rule engine decided this is safe. In template mode today, explanation is pre-authored text. When integrated with Genie, the Snapdragon NPU will generate personalized guidance - but the safety decision will always come from rules, never from AI."
 
 ### 3. Live Hazard Detection (0:45 - 1:10)
 
@@ -45,7 +45,7 @@ Click **"H₂S Buildup"** scenario button
 - Live readings increasing
 - Guidance changing: "अंदर मत जाइए। H₂S खतरनाक स्तर पर है।"
 
-**Say**: "Watch the H₂S rise. The moment it crosses the threshold, the system immediately shows NO-GO. This is the Snapdragon AI moment - the guidance is generated on-device, entirely offline."
+**Say**: "Watch the H₂S rise. The moment it crosses the threshold, the system immediately shows NO-GO. In the full version, guidance will be generated on-device using the Snapdragon NPU, but today it uses templates."
 
 ### 4. Offline Operation (1:10 - 1:30)
 
@@ -59,7 +59,7 @@ Click **"Mixed Hazard"** scenario
 - "⚠️ OFFLINE MODE - All operations local" banner
 - Decision still updates, guidance still generates
 
-**Say**: "I just turned off the network. Everything still works. The decision, the AI explanation, everything runs locally on the Snapdragon device. This is critical - a worker's life can't depend on a network connection."
+**Say**: "I just turned off the network. Everything still works. The decision runs offline on the device. When NPU integration is complete, AI explanation will also be fully on-device."
 
 ### 5. Sensor Fault Detection (1:30 - 1:50)
 
@@ -81,7 +81,7 @@ Point to **Provenance panel**
 - Explanation Source: on_device_llm
 - Sensors Operational: 4/4 (or 3/4 in fault scenario)
 
-**Say**: "The AI never decided whether it's safe. Look at this provenance panel - it clearly shows the deterministic rule engine made the call. The LLM only translated it. This is auditable, transparent, and safe."
+**Say**: "The AI never decided whether it's safe. The deterministic rule engine made the call. When NPU integration is complete, the explanation will be generated on-device. This is auditable, transparent, and safe."
 
 ### 7. City Layer (2:10 - 2:30)
 
@@ -96,7 +96,7 @@ Navigate to `http://localhost:8000/city`
 
 ### 8. Close (2:30 - 3:00)
 
-**Script**: "Praan solves one specific problem: is it safe to enter, right now, at this exact opening. It does this offline, in local languages, with the AI explaining decisions it never made. This is what on-device AI should look like for life-safety applications."
+**Script**: "Praan solves one specific problem: is it safe to enter, right now, at this exact opening. It does this offline, in local languages. Rules decide safety; AI explains. This is how on-device AI should work for life-safety applications."
 
 ## Extended Demo (10-Minute Version)
 
@@ -123,10 +123,10 @@ Navigate to `http://localhost:8000/city`
    - Show NAMASTE scheme alignment
    - Explain pilot-to-procurement path
 
-5. **NPU Usage** (when Genie integrated)
-   - Show NPU visibility panel
-   - Benchmark CPU vs NPU latency
-   - Task Manager showing Hexagon usage
+5. **NPU Usage**
+   - Show AI status panel indicating current mode (template or NPU)
+   - When Genie integrated: show NPU metrics and benchmarks
+   - Never claim NPU is running if it's not
 
 ## Demo Hardware Setup
 

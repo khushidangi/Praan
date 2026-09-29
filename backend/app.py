@@ -44,6 +44,76 @@ voice_gen = VoiceGenerator(language="hi")
 # Simulated probe (will be replaced by real USB-serial connection)
 simulated_probe = SimulatedProbe(scenario="safe")
 
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        dead_connections = []
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                dead_connections.append(connection)
+        
+        # Clean up dead connections
+        for connection in dead_connections:
+            self.active_connections.remove(connection)
+
+manager = ConnectionManager()
+
+# Background task for probe reading
+probe_task_running = False
+
+async def probe_broadcast_loop():
+    """Single background task that reads probe and broadcasts to all clients."""
+    while probe_task_running:
+        try:
+            # Read probe frame
+            frame = simulated_probe.read_frame()
+
+            # Evaluate safety decision
+            decision = evaluate(frame)
+
+            # Generate guidance
+            guidance = guidance_gen.generate(decision, language="hi")
+
+            # Broadcast to all connected clients
+            await manager.broadcast({
+                "type": "update",
+                "frame": frame,
+                "decision": decision,
+                "guidance": guidance,
+            })
+
+            await asyncio.sleep(2.0)  # Match probe polling interval
+        except Exception as e:
+            print(f"Probe broadcast error: {e}")
+            await asyncio.sleep(2.0)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the probe broadcast task."""
+    global probe_task_running
+    probe_task_running = True
+    asyncio.create_task(probe_broadcast_loop())
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop the probe broadcast task."""
+    global probe_task_running
+    probe_task_running = False
+
 
 # ──────────────────────────────────────────────────────────────────────
 # Request/Response Models
@@ -77,7 +147,7 @@ class SiteInfo(BaseModel):
 @app.websocket("/ws/telemetry")
 async def telemetry_stream(websocket: WebSocket):
     """Live probe telemetry + safety decisions via WebSocket."""
-    await websocket.accept()
+    await manager.connect(websocket)
 
     try:
         # Send initial status
@@ -87,31 +157,21 @@ async def telemetry_stream(websocket: WebSocket):
             "mode": "simulated",  # Will be "hardware" when Arduino connected
         })
 
+        # Keep connection alive and listen for client messages
         while True:
-            # Read probe frame
-            frame = simulated_probe.read_frame()
-
-            # Evaluate safety decision
-            decision = evaluate(frame)
-
-            # Generate guidance
-            guidance = guidance_gen.generate(decision, language="hi")
-
-            # Send combined update
-            await websocket.send_json({
-                "type": "update",
-                "frame": frame,
-                "decision": decision,
-                "guidance": guidance,
-            })
-
-            await asyncio.sleep(2.0)  # Match probe polling interval
+            # Just keep the connection open; broadcasts happen from probe_broadcast_loop
+            try:
+                await websocket.receive_text()
+            except:
+                break
+            await asyncio.sleep(0.1)
 
     except WebSocketDisconnect:
+        manager.disconnect(websocket)
         print("Client disconnected from telemetry stream")
     except Exception as e:
+        manager.disconnect(websocket)
         print(f"WebSocket error: {e}")
-        await websocket.close()
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -157,18 +217,22 @@ async def site_history(site_id: str, limit: int = 20):
 # Control: Change simulation scenario
 # ──────────────────────────────────────────────────────────────────────
 
+class ScenarioRequest(BaseModel):
+    scenario: str
+
+
 @app.post("/api/simulate/scenario")
-async def set_scenario(scenario: str):
+async def set_scenario(request: ScenarioRequest):
     """Change simulated probe scenario (for demo purposes)."""
     valid_scenarios = ["safe", "h2s_buildup", "o2_depletion", "sensor_fault", "mixed_hazard"]
-    if scenario not in valid_scenarios:
+    if request.scenario not in valid_scenarios:
         raise HTTPException(400, f"Invalid scenario. Choose from: {valid_scenarios}")
 
-    simulated_probe.set_scenario(scenario)
+    simulated_probe.set_scenario(request.scenario)
     return {
         "success": True,
-        "scenario": scenario,
-        "message": f"Scenario changed to: {scenario}",
+        "scenario": request.scenario,
+        "message": f"Scenario changed to: {request.scenario}",
     }
 
 
@@ -398,10 +462,22 @@ async def root():
     """)
 
 
+def resource_path(relative_path: str) -> Path:
+    """Get absolute path to resource, works for dev and PyInstaller."""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        import sys
+        base_path = Path(sys._MEIPASS)
+    except Exception:
+        base_path = Path(__file__).parent.parent
+    
+    return base_path / relative_path
+
+
 @app.get("/dashboard")
 async def dashboard():
     """Serve field unit dashboard."""
-    dashboard_path = Path(__file__).parent.parent / "dashboard" / "field_unit.html"
+    dashboard_path = resource_path("dashboard/field_unit.html")
     return FileResponse(dashboard_path)
 
 

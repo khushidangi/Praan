@@ -1,0 +1,39 @@
+# Safety limits configuration for confined space entry
+# All values must be verified by a qualified person against applicable standards
+
+authority: "TODO(HUMAN): name the authority (e.g. CPHEEO SOP 2018, OSHA 29 CFR 1910.146, or the municipal program)"
+
+# Timing parameters
+freshness_seconds: 6
+stabilization_seconds: 60  # TODO(HUMAN): verify from SOP
+recovery_consecutive_readings: 5  # about 10 s at 2 s cadence
+warn_margin_fraction: 0.20
+predict_horizon_seconds: 120
+go_valid_minutes: 30
+
+# Gas limits for entry decision
+gases:
+  o2_pct:
+    lower: 19.5
+    upper: 23.5
+    unit: "%vol"
+    source: "TODO(HUMAN)"  # candidate values, verify against standard
+  h2s_ppm:
+    upper: 10
+    unit: "ppm"
+    source: "TODO(HUMAN)"  # candidate values, verify against standard
+  co_ppm:
+    upper: 25
+    unit: "ppm"
+    source: "TODO(HUMAN)"  # candidate values, verify against standard
+  lel_pct:
+    upper: 10
+    unit: "%LEL"
+    source: "TODO(HUMAN)"  # candidate values, verify against standard
+
+# Physical sensor ranges (for integrity checking)
+physical_range:
+  o2_pct: [0, 25]
+  h2s_ppm: [0, 500]
+  co_ppm: [0, 1000]
+  lel_pct: [0, 100]
