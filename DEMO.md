@@ -119,7 +119,7 @@ Navigate to `http://localhost:8000/city`
    - Explain why this matters for certification
 
 4. **Government Alignment**
-   - Open `docs/project_overview.md`
+   - Open `README.md` for the product and Snapdragon architecture
    - Show NAMASTE scheme alignment
    - Explain pilot-to-procurement path
 
@@ -161,14 +161,14 @@ A: We'd rather a false NO-GO than a false GO. The CAUTION state exists for borde
 A: The architecture supports it. We're using Hindi now. The LLM and TTS pipeline can handle 1000+ languages when fully integrated.
 
 **Q: What's the path to real deployment?**
-A: Pilot with one city's ERSU team → cross-validate against certified meters → inclusion in NAMASTE equipment standards. See section 8 of project_overview.md.
+A: Pilot with one city's ERSU team, cross-validate against certified meters, then pursue the relevant municipal and certification path. See the limitations section in README.md.
 
 ## Post-Demo Follow-Up
 
 Provide attendees with:
 - GitHub repository link
 - `README.md` (quick start guide)
-- `docs/project_overview.md` (full system description)
+- `README.md` (full product and technical submission)
 - Contact information for pilot collaboration
 
 ## Demo Checklist

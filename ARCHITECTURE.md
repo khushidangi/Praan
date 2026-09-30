@@ -243,14 +243,13 @@ praan/
 │   └── test_integration.py      ← Full pipeline tests
 │
 ├── docs/
-│   ├── project_overview.md      ← Full system description
 │   └── technical_architecture.md ← Implementation details
 │
 ├── run.py                       ← Launch script
 ├── requirements.txt             ← Dependencies
 ├── README.md                    ← Setup & usage
 ├── DEMO.md                      ← 3-minute demo script
-├── IMPLEMENTATION_STATUS.md     ← What's done, what's pending
+├── STATUS.md                    ← What's done, what's pending
 └── ARCHITECTURE.md              ← This file
 ```
 
@@ -359,6 +358,6 @@ TIER 3: Production Deployment (FUTURE)
 
 **For detailed implementation notes, see**:
 - `docs/technical_architecture.md` - Full technical spec
-- `IMPLEMENTATION_STATUS.md` - What's done, what's pending
+- `STATUS.md` - What's done, what's pending
 - `README.md` - Setup and quick start
 - `DEMO.md` - How to present this system

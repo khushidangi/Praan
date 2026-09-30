@@ -11,6 +11,8 @@ import json
 from typing import Dict, Optional
 from pathlib import Path
 
+from pipeline.genie_runtime import GenieRuntime
+
 
 # ──────────────────────────────────────────────────────────────────────
 # Prompt template
@@ -73,27 +75,23 @@ class GuidanceGenerator:
     For now, uses rule-based fallback templates.
     """
 
-    def __init__(self, genie_bundle_path: Optional[Path] = None, use_genie: bool = False):
+    def __init__(self, genie_bundle_path: Optional[Path] = None, use_genie: Optional[bool] = None):
         """Initialize guidance generator.
 
         Args:
             genie_bundle_path: Path to compiled Genie bundle (context binaries + config)
             use_genie: If True, use actual Genie inference; else use templates
         """
-        self.genie_bundle_path = genie_bundle_path
-        self.use_genie = use_genie
-
-        if use_genie and genie_bundle_path:
-            self._init_genie()
+        self.runtime = GenieRuntime(genie_bundle_path)
+        self.use_genie = self.runtime.available if use_genie is None else bool(use_genie and self.runtime.available)
+        if self.use_genie:
+            print(f"[GuidanceGenerator] Genie runtime active ({self.runtime.provider})")
         else:
             print("[GuidanceGenerator] Using template-based fallback (Genie not available)")
 
-    def _init_genie(self):
-        """Initialize Genie runtime (placeholder)."""
-        # TODO: Load Genie model
-        # from qai_appbuilder import QNNContext
-        # self.model = QNNContext(str(self.genie_bundle_path))
-        pass
+    def status(self) -> Dict:
+        """Return runtime facts for the supervisor and field-unit provenance panels."""
+        return self.runtime.status()
 
     def generate(self, rule_decision: Dict, language: str = "hi") -> Dict:
         """Generate guidance message from a rule-engine decision.
@@ -105,11 +103,17 @@ class GuidanceGenerator:
         Returns:
             Guidance message dict with keys: ts, language, text, audio_ready
         """
+        engine = "template"
+        provider = "none"
+        latency_ms = None
         if self.use_genie:
-            # TODO: Call Genie inference
-            # prompt = build_prompt(rule_decision, language)
-            # text = self.model.generate(prompt, max_tokens=50)
-            text = self._template_fallback(rule_decision, language)
+            try:
+                text = self.runtime.generate(build_prompt(rule_decision, language))
+                engine = "genie"
+                provider = self.runtime.provider
+                latency_ms = self.runtime.last_latency_ms
+            except Exception:
+                text = self._template_fallback(rule_decision, language)
         else:
             text = self._template_fallback(rule_decision, language)
 
@@ -118,6 +122,9 @@ class GuidanceGenerator:
             "language": language,
             "text": text,
             "audio_ready": False,  # Will be set to True after TTS
+            "engine": engine,
+            "provider": provider,
+            "latency_ms": latency_ms,
         }
 
     def _template_fallback(self, rule_decision: Dict, language: str) -> str:

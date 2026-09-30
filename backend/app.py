@@ -13,10 +13,12 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict
+from fastapi.responses import Response
 from pathlib import Path
 import json
 import time
 import asyncio
+from urllib.parse import quote
 
 from backend.state_store import StateStore
 from backend.simulated_probe import SimulatedProbe
@@ -42,7 +44,7 @@ app.add_middleware(
 
 # Initialize components
 state = StateStore()
-guidance_gen = GuidanceGenerator(use_genie=False)
+guidance_gen = GuidanceGenerator()
 voice_gen = VoiceGenerator(language="hi")
 safety_config = get_config()
 rule_engine = RuleEngine(safety_config)
@@ -358,7 +360,7 @@ async def create_session(req: SessionCreateRequest):
     supervisor_token = auth.generate_token(session.session_id, "supervisor", exp_hours=24)
     
     # Generate join URL
-    join_url = f"/w?session={session.session_id}&token={worker_token}"
+    join_url = f"/w?session={session.session_id}&token={quote(worker_token, safe='')}"
     
     return {
         "success": True,
@@ -477,6 +479,36 @@ async def set_scenario(request: ScenarioRequest):
         "scenario": request.scenario,
         "message": f"Scenario changed to: {request.scenario}",
     }
+
+
+@app.get("/api/ward/summary")
+async def ward_summary():
+    """Return deterministic ward facts for the offline ward screen."""
+    sites = state.get_all_sites()
+    unsafe = [site for site in sites if site.get("last_decision") in {"NO_GO", "UNKNOWN"}]
+    overdue = [site for site in sites if site.get("inspection_count", 0) > 0 and site.get("hazard_count", 0) > 0]
+    needs_action = []
+    for site in unsafe:
+        reason = "latest inspection is NO-GO" if site.get("last_decision") == "NO_GO" else "latest reading could not be verified"
+        needs_action.append({"site_id": site["site_id"], "site_name": site["site_name"], "decision": site["last_decision"], "reason": reason, "location": site["location"]})
+    return {
+        "demo_data": True,
+        "sites_monitored": len(sites),
+        "unsafe_today": len([site for site in sites if site.get("last_decision") == "NO_GO"]),
+        "overdue_for_cleaning": len(overdue),
+        "needs_action": needs_action,
+        "sites": sites,
+    }
+
+
+@app.get("/api/ward/export.csv")
+async def ward_export():
+    """Export the local ward summary without contacting a cloud service."""
+    rows = ["site_id,site_name,last_decision,inspection_count,hazard_count"]
+    for site in state.get_all_sites():
+        values = [site["site_id"], site["site_name"], site.get("last_decision") or "", site.get("inspection_count", 0), site.get("hazard_count", 0)]
+        rows.append(",".join('"' + str(value).replace('"', '""') + '"' for value in values))
+    return Response("\n".join(rows), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=praan-ward-export.csv"})
 
 
 @app.get("/city")
@@ -646,6 +678,12 @@ async def city_dashboard():
     """)
 
 
+@app.get("/ward")
+async def ward_dashboard():
+    """Serve the connected offline ward view."""
+    return FileResponse(resource_path("web/ward/index.html"))
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Static files & root
 # ──────────────────────────────────────────────────────────────────────
@@ -742,6 +780,12 @@ async def worker_js():
     return FileResponse(js_path, media_type="application/javascript")
 
 
+@app.get("/worker.js")
+async def worker_js_alias():
+    """Serve the relative asset path used by the worker page at /w."""
+    return await worker_js()
+
+
 @app.get("/dashboard")
 async def dashboard():
     """Serve field unit dashboard."""
@@ -752,21 +796,22 @@ async def dashboard():
 @app.get("/api/ai/status")
 async def ai_status():
     """AI status endpoint - shows real engine/provider status."""
-    # Check if Genie is actually wired up
-    engine = "template"  # Will be "genie" when NPU integrated
-    provider = "none"    # Will be "NPU" or "CPU" when Genie is wired
-    model = None
-    latency_ms = None
+    runtime = guidance_gen.status()
     
     # Check citations
     citations_valid = safety_config.all_citations_valid
     missing_citations = safety_config.missing_citations if not citations_valid else []
     
     return {
-        "engine": engine,
-        "provider": provider,
-        "model": model,
-        "latency_ms": latency_ms,
+        "engine": runtime["engine"],
+        "provider": runtime["provider"],
+        "model": runtime["model"],
+        "latency_ms": runtime["latency_ms"],
+        "bundle_path": runtime["bundle_path"],
+        "command_configured": runtime["command_configured"],
+        "command_available": runtime["command_available"],
+        "genie_available": runtime["available"],
+        "last_error": runtime["last_error"],
         "citations_valid": citations_valid,
         "missing_citations": missing_citations,
         "offline": True,

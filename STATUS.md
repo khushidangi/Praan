@@ -121,7 +121,7 @@
 - ⏳ R-U3: Playbook-backed action assignment and completion effects
 - ⏳ R-U7: Persisting a full session inspection record at wrap-up
 - ⏳ Sparkline rendering and richer measured-effect telemetry
-- ⏳ R-D1: Ward view per 7.10
+- ✅ R-D1: Ward view with local summary, schematic map and CSV export
 
 ## Phase 5: Playbook and Guidance - NOT STARTED
 - ⏳ guidance/playbook.json
@@ -130,10 +130,12 @@
 - ⏳ History score
 - ⏳ Site brief
 
-## Phase 6: Genie and NPU - NOT STARTED
-- ⏳ Genie integration (human must export model first)
-- ⏳ Real /api/ai/status reporting
-- ⏳ Benchmarks
+## Phase 6: Genie and NPU - RUNTIME ADAPTER READY
+- ✅ `pipeline/genie_runtime.py` detects a real local bundle and executable
+- ✅ `pipeline/guidance.py` uses Genie when available and falls back to templates
+- ✅ `/api/ai/status` reports engine, provider, model, bundle and measured latency
+- ⏳ Human must export and run the Genie bundle on the Snapdragon HP PC
+- ⏳ CPU/NPU benchmarks
 
 ## Phase 7: Voice - NOT STARTED
 - ⏳ Recorded audio clips
@@ -144,11 +146,11 @@
 - ⏳ Firmware
 - ⏳ limits.h generation
 
-## Phase 9: Ship - NOT STARTED
+## Phase 9: Ship - DOCUMENTATION READY
 - ⏳ Certificate script
 - ⏳ PyInstaller build
 - ⏳ Fault injection tests
-- ⏳ README
+- ✅ README is the judge-facing submission document
 - ⏳ Demo video
 
 ## Current System Status
@@ -183,7 +185,6 @@
 - Benchmarks showing NPU vs CPU
 
 **Important:**
-- Phase 4: Full supervisor Live Site UI with action plan, timeline
 - Phase 5: Playbook with canonical guidance
 - Phase 9: ARM64 .exe build
 

@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from typing import List, Dict, Optional
 import uuid
+import os
 
 
 class StateStore:
@@ -60,6 +61,44 @@ class StateStore:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_site_ts ON inspections(site_id, timestamp DESC)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_synced ON inspections(synced)")
 
+        self.conn.commit()
+        self._seed_demo_data()
+
+    def _seed_demo_data(self):
+        """Create visible offline demo sites once for a fresh or empty hub."""
+        if os.getenv("PRAAN_DEMO_DATA", "1").lower() in {"0", "false", "no"}:
+            return
+        cursor = self.conn.cursor()
+        if cursor.execute("SELECT 1 FROM sites LIMIT 1").fetchone():
+            return
+
+        now = time.time()
+        demo_sites = [
+            ("MH-1049", "Manhole MH-1049 (Sector 4B Trunk Sewer)", 28.61, 77.21, "NO_GO", {"h2s_ppm": 14.2, "co_ppm": 18, "o2_pct": 19.8, "lel_pct": 2}),
+            ("SC-0882", "Septic Chamber SC-0882 (Govt Hospital Ward 3)", 28.62, 77.22, "CAUTION", {"h2s_ppm": 8.1, "co_ppm": 12, "o2_pct": 20.1, "lel_pct": 4}),
+            ("MH-0427", "Manhole MH-0427 (Market Square West)", 28.60, 77.20, "UNKNOWN", {"h2s_ppm": 0, "co_ppm": 0, "o2_pct": 0, "lel_pct": 0}),
+            ("MH-0118", "Manhole MH-0118 (Railway Crossing Culvert)", 28.63, 77.19, "GO", {"h2s_ppm": 1.0, "co_ppm": 5, "o2_pct": 20.9, "lel_pct": 0.5}),
+        ]
+        for site_id, name, lat, lon, decision, readings in demo_sites:
+            cursor.execute(
+                "INSERT INTO sites (site_id, site_name, location_json, created_at, last_inspection_ts) VALUES (?, ?, ?, ?, ?)",
+                (site_id, name, json.dumps({"lat": lat, "lon": lon}), now, now),
+            )
+            cursor.execute(
+                """INSERT INTO inspections (
+                    inspection_id, site_id, timestamp, decision, risk_tier,
+                    violated_thresholds_json, readings_json, guidance_text,
+                    inspector_notes, synced
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+                (
+                    str(uuid.uuid4()), site_id, now, decision,
+                    "hazard" if decision == "NO_GO" else "caution" if decision in {"CAUTION", "UNKNOWN"} else "safe",
+                    json.dumps(["h2s_ppm"] if decision == "NO_GO" else []),
+                    json.dumps(readings),
+                    "DEMO DATA: historical inspection placeholder",
+                    "SIMULATED demo record",
+                ),
+            )
         self.conn.commit()
 
     def save_inspection(
