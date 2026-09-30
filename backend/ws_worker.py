@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import time
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Dict, Optional
 
@@ -73,6 +74,7 @@ class WorkerConnection:
         # Build state message per 7.3 spec
         message = {
             "type": "state",
+            "sent_at": time.time(),
             "seq": session.seq,
             "state": worker_state.get("state"),
             "reason": worker_state.get("reason"),
